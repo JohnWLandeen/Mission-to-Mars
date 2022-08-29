@@ -12,6 +12,7 @@ def scrape_all():
 
     news_title, news_paragraph = mars_news(browser)
 
+    hemisphere_image_urls = scrape_challenge(browser)
 
     # Run all scraping functions and store results in dictionary
     data = {
@@ -19,8 +20,12 @@ def scrape_all():
       "news_paragraph": news_paragraph,
       "featured_image": featured_image(browser),
       "facts": mars_facts(),
+      "hemispheres": hemisphere_image_urls,
       "last_modified": dt.datetime.now()
+
     }
+
+
 
     # Stop webdriver and return data
     browser.quit()
@@ -29,7 +34,7 @@ def scrape_all():
 def mars_news(browser):
 
     # Visit the mars nasa news site
-    url = 'https://redplanetscience.com'
+    url = 'https://redplanetscience.com/'
     browser.visit(url)
 
     # Optional delay for loading the page
@@ -57,7 +62,7 @@ def mars_news(browser):
 def featured_image(browser):
 
     # Visit URL
-    url = 'https://spaceimages-mars.com'
+    url = 'https://spaceimages-mars.com/'
     browser.visit(url)
 
 
@@ -101,7 +106,55 @@ def mars_facts():
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html()
 
+def scrape_challenge(browser):
 
+    url = 'https://marshemispheres.com/'
+    browser.visit(url)
+
+    hemisphere_holding_list = []
+
+    html = browser.html
+    img_soup = soup(html, 'html.parser')
+
+    # Add try/except for error handling
+    try:
+
+        img_url_list = []
+        images = img_soup.find_all('img', {'class': 'thumb'})
+        for img in images:
+            if img.has_attr('src'):
+                print(img['src'])
+                img_url_list.append(img['src'])
+
+    
+        for item in img_url_list:
+            hemisphere_holding_list.append(f'https://marshemispheres.com/{item}')
+
+        html = browser.html
+        news_soup = soup(html, 'html.parser')
+        news = news_soup.find_all('div', attrs={'class':'description'})
+
+        titles = []
+        for result in news:
+            title = result.find('a', class_='itemLink product-item').get_text()
+            titles.append(title)
+
+        titles = [title.replace('\n', '') for title in titles]
+
+        full_list = [item for sublist in zip(hemisphere_holding_list, titles) for item in sublist]
+
+        key_list = ["img_url","title"]
+        length = len(full_list)
+        new_list = []
+        for item in range (0, length, 2):
+            new_list.append({key_list[0]: full_list[item], key_list[1] : full_list[item + 1]})
+
+        hemisphere_image_urls = new_list
+
+    except AttributeError:
+        return None
+
+    return hemisphere_image_urls
 
 if __name__ == "__main__":
 
